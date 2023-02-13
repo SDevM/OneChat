@@ -13,7 +13,7 @@ const clients = new Map()
 if (ioSocketServer) console.log("Socket Server Operational")
 
 ioSocketServer.on("connection", (socket) => {
-  // console.log(`New conneciton: ${socket.handshake.address}`)
+  console.log(`New conneciton: ${socket.handshake.address}`)
   const metadata = {
     id: crypto.randomUUID(),
     socket: socket,
