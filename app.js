@@ -13,16 +13,37 @@ const clients = new Map()
 if (ioSocketServer) console.log("Socket Server Operational")
 
 ioSocketServer.on("connection", (socket) => {
-  console.log(`New conneciton: ${socket.handshake.address}`)
+  console.log(`New connection: ${socket.handshake.address}`)
+
   const metadata = {
     id: crypto.randomUUID(),
     socket: socket,
     name: "random",
   }
-  clients.set(crypto.randomUUID(), socket)
   socket.emit("backlog", msgs)
 
-  socket.on("name", (name) => (metadata.name = name))
+  socket.on("online", () => {
+    let subclients = []
+    ;[...clients.entries()].forEach((clientPair) =>
+      subclients.push(clientPair[1].name)
+    )
+    ;[...clients.values()].forEach((client) =>
+      client.socket.emit("online", subclients)
+    )
+  })
+
+  socket.on("name", (name) => {
+    metadata.name = name
+    clients.set(metadata.id, { name, socket })
+    let subclients = []
+    ;[...clients.entries()].forEach((clientPair) =>
+      subclients.push(clientPair[1].name)
+    )
+    ;[...clients.values()].forEach((client) =>
+      client.socket.emit("online", subclients)
+    )
+    console.log(subclients)
+  })
 
   socket.on("message", (msg) => {
     const new_msg = {
@@ -31,10 +52,27 @@ ioSocketServer.on("connection", (socket) => {
       content: msg,
     }
     msgs.push(new_msg)
-    clients.forEach((client, id) => client.send(new_msg))
+    clients.forEach((client) => client.send(new_msg))
   })
 
   socket.on("close", () => {
     clients.delete(metadata.id)
+    let subclients = []
+    ;[...clients.entries()].forEach((clientVal) =>
+      subclients.push(clientVal.name)
+    )
+    ;[...clients.values()].forEach((client) =>
+      client.socket.emit("online", subclients)
+    )
+  })
+  socket.on("disconnect", () => {
+    clients.delete(metadata.id)
+    let subclients = []
+    ;[...clients.entries()].forEach((clientVal) =>
+      subclients.push(clientVal.name)
+    )
+    ;[...clients.values()].forEach((client) =>
+      client.socket.emit("online", subclients)
+    )
   })
 })
