@@ -1,5 +1,6 @@
 require("dotenv").config()
 const { PORT } = process.env
+const crypto = require("crypto")
 const http = require("http")
 const { Server } = require("socket.io")
 const httpServer = http.createServer()
@@ -12,14 +13,14 @@ const clients = new Map()
 if (ioSocketServer) console.log("Socket Server Operational")
 
 ioSocketServer.on("connection", (socket) => {
-  console.log(`New conneciton: ${socket.handshake.address}`)
+  // console.log(`New conneciton: ${socket.handshake.address}`)
   const metadata = {
     id: crypto.randomUUID(),
     socket: socket,
     name: "random",
   }
   clients.set(crypto.randomUUID(), socket)
-  socket.emit("backlog", msgs)
+  socket.emit("backlog", { stack: msgs, me: metadata.id })
 
   socket.on("name", (name) => (metadata.name = name))
 
@@ -30,7 +31,7 @@ ioSocketServer.on("connection", (socket) => {
       content: msg,
     }
     msgs.push(new_msg)
-    clients.forEach((client, id) => id == metadata.id || client.send(new_msg))
+    clients.forEach((client, id) => client.send(new_msg))
   })
 
   socket.on("close", () => {
