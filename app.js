@@ -42,7 +42,6 @@ ioSocketServer.on("connection", (socket) => {
     ;[...clients.values()].forEach((client) =>
       client.socket.emit("online", subclients)
     )
-    console.log(subclients)
   })
 
   socket.on("message", (msg) => {
@@ -58,8 +57,8 @@ ioSocketServer.on("connection", (socket) => {
   socket.on("close", () => {
     clients.delete(metadata.id)
     let subclients = []
-    ;[...clients.entries()].forEach((clientVal) =>
-      subclients.push(clientVal.name)
+    ;[...clients.entries()].forEach((clientPair) =>
+      subclients.push(clientPair[1].name)
     )
     ;[...clients.values()].forEach((client) =>
       client.socket.emit("online", subclients)
@@ -68,8 +67,8 @@ ioSocketServer.on("connection", (socket) => {
   socket.on("disconnect", () => {
     clients.delete(metadata.id)
     let subclients = []
-    ;[...clients.entries()].forEach((clientVal) =>
-      subclients.push(clientVal.name)
+    ;[...clients.entries()].forEach((clientPair) =>
+      subclients.push(clientPair[1].name)
     )
     ;[...clients.values()].forEach((client) =>
       client.socket.emit("online", subclients)
