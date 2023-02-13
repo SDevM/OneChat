@@ -20,7 +20,7 @@ ioSocketServer.on("connection", (socket) => {
     name: "random",
   }
   clients.set(crypto.randomUUID(), socket)
-  socket.emit("backlog", { stack: msgs, me: metadata.id })
+  socket.emit("backlog", msgs)
 
   socket.on("name", (name) => (metadata.name = name))
 
