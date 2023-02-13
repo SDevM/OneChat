@@ -51,7 +51,7 @@ ioSocketServer.on("connection", (socket) => {
       content: msg,
     }
     msgs.push(new_msg)
-    clients.forEach((client) => client.send(new_msg))
+    ;[...clients.entries()].forEach((client) => client[1].send(new_msg))
   })
 
   socket.on("close", () => {
