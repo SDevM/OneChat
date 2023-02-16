@@ -9,6 +9,7 @@ const ioSocketServer = new Server(httpServer)
 
 const msgs = []
 const clients = new Map()
+const rooms = new Map()
 
 if (ioSocketServer) console.log("Socket Server Operational")
 
@@ -19,16 +20,20 @@ ioSocketServer.on("connection", (socket) => {
     id: crypto.randomUUID(),
     socket: socket,
     name: "random",
+    dms: [],
   }
   socket.emit("backlog", msgs)
 
   socket.on("online", () => {
     let subclients = []
     ;[...clients.entries()].forEach((clientPair) =>
-      subclients.push(clientPair[1].name)
+      subclients.push({ name: clientPair[1].name, id: clientPair[0] })
     )
-    ;[...clients.values()].forEach((client) =>
-      client.socket.emit("online", subclients)
+    ;[...clients.entries()].forEach((client) =>
+      client[1].socket.emit(
+        "online",
+        subclients.filter((subclient) => subclient.id != client[0])
+      )
     )
   })
 
@@ -37,10 +42,13 @@ ioSocketServer.on("connection", (socket) => {
     clients.set(metadata.id, { name, socket })
     let subclients = []
     ;[...clients.entries()].forEach((clientPair) =>
-      subclients.push(clientPair[1].name)
+      subclients.push({ name: clientPair[1].name, id: clientPair[0] })
     )
-    ;[...clients.values()].forEach((client) =>
-      client.socket.emit("online", subclients)
+    ;[...clients.entries()].forEach((client) =>
+      client[1].socket.emit(
+        "online",
+        subclients.filter((subclient) => subclient.id != client[0])
+      )
     )
   })
 
@@ -54,24 +62,57 @@ ioSocketServer.on("connection", (socket) => {
     ;[...clients.values()].forEach((client) => client.socket.send(new_msg))
   })
 
+  socket.on("loadDm", (id) => {
+    let sortedIDs = [metadata.id, id].sort()
+    let concat = sortedIDs[0] + sortedIDs[1]
+    socket.emit("loadDm", rooms.get(concat) || [])
+    metadata.dms.push(concat)
+  })
+
+  socket.on("directMessage", (dmdata) => {
+    let sortedIDs = [metadata.id, dmdata.id].sort()
+    let concat = sortedIDs[0] + sortedIDs[1]
+    if (!rooms.get(concat)) rooms.set(concat, [])
+    let msg = {
+      id: metadata.id,
+      owner: metadata.name,
+      content: dmdata.text,
+    }
+    rooms.get(concat).push(msg)
+    socket.emit("directMessage", msg)
+    clients.get(dmdata.id).socket.emit("directMessage", msg)
+  })
+
   socket.on("close", () => {
     clients.delete(metadata.id)
+    metadata.dms.forEach((room) => {
+      rooms.delete(room)
+    })
     let subclients = []
     ;[...clients.entries()].forEach((clientPair) =>
-      subclients.push(clientPair[1].name)
+      subclients.push({ name: clientPair[1].name, id: clientPair[0] })
     )
-    ;[...clients.values()].forEach((client) =>
-      client.socket.emit("online", subclients)
+    ;[...clients.entries()].forEach((client) =>
+      client[1].socket.emit(
+        "online",
+        subclients.filter((subclient) => subclient.id != client[0])
+      )
     )
   })
   socket.on("disconnect", () => {
     clients.delete(metadata.id)
+    metadata.dms.forEach((room) => {
+      rooms.delete(room)
+    })
     let subclients = []
     ;[...clients.entries()].forEach((clientPair) =>
-      subclients.push(clientPair[1].name)
+      subclients.push({ name: clientPair[1].name, id: clientPair[0] })
     )
-    ;[...clients.values()].forEach((client) =>
-      client.socket.emit("online", subclients)
+    ;[...clients.entries()].forEach((client) =>
+      client[1].socket.emit(
+        "online",
+        subclients.filter((subclient) => subclient.id != client[0])
+      )
     )
   })
 })
