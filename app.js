@@ -68,7 +68,7 @@ ioSocketServer.on("connection", (socket) => {
     socket.emit("loadDm", rooms.get(concat) || [])
     metadata.dms.push(concat)
   })
-
+  
   socket.on("directMessage", (dmdata) => {
     let sortedIDs = [metadata.id, dmdata.id].sort()
     let concat = sortedIDs[0] + sortedIDs[1]
