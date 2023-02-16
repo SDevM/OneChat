@@ -80,7 +80,7 @@ ioSocketServer.on("connection", (socket) => {
     }
     rooms.get(concat).push(msg)
     socket.emit("directMessage", msg, metadata.id)
-    clients.get(dmdata.id).socket.emit("directMessage", msg, metadata.id)
+    clients.get(dmdata.id).socket.emit("directMessage", msg, "")
   })
 
   socket.on("close", () => {
