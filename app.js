@@ -79,8 +79,8 @@ ioSocketServer.on("connection", (socket) => {
       content: dmdata.text,
     }
     rooms.get(concat).push(msg)
-    socket.emit("directMessage", msg)
-    clients.get(dmdata.id).socket.emit("directMessage", msg)
+    socket.emit("directMessage", msg, metadata.id)
+    clients.get(dmdata.id).socket.emit("directMessage", msg, metadata.id)
   })
 
   socket.on("close", () => {
