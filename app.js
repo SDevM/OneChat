@@ -7,7 +7,14 @@ const httpServer = http.createServer()
 httpServer.listen(PORT)
 const ioSocketServer = new Server(httpServer)
 
-const msgs = []
+const msgs = [
+  {
+    id: "0",
+    owner: "System",
+    content:
+      "Welcome to Anonychat! You may speak here in the general chat, or find an online user to DM.",
+  },
+]
 const clients = new Map()
 const rooms = new Map()
 const names = new Set()
