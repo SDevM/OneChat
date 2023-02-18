@@ -10,6 +10,7 @@ const ioSocketServer = new Server(httpServer)
 const msgs = []
 const clients = new Map()
 const rooms = new Map()
+const names = new Set()
 
 if (ioSocketServer) console.log("Socket Server Operational")
 
@@ -38,6 +39,13 @@ ioSocketServer.on("connection", (socket) => {
   })
 
   socket.on("name", (name) => {
+    if (
+      names.has(String(name).toUpperCase()) ||
+      String(name).toUpperCase() == "SYSTEM"
+    ) {
+      socket.emit("NAMETAKEN")
+      return
+    } else if (String(name).toUpperCase() != "ANON") names.add(name)
     metadata.name = name
     clients.set(metadata.id, { name, socket })
     let subclients = []
@@ -68,7 +76,7 @@ ioSocketServer.on("connection", (socket) => {
     socket.emit("loadDm", rooms.get(concat) || [])
     metadata.dms.push(concat)
   })
-  
+
   socket.on("directMessage", (dmdata) => {
     let sortedIDs = [metadata.id, dmdata.id].sort()
     let concat = sortedIDs[0] + sortedIDs[1]
