@@ -52,7 +52,8 @@ ioSocketServer.on("connection", (socket) => {
     ) {
       socket.emit("NAMETAKEN")
       return
-    } else if (String(name).toUpperCase() != "ANON") names.add(name)
+    } else if (String(name).toUpperCase() != "ANON")
+      names.add(String(name).toUpperCase())
     metadata.name = name
     clients.set(metadata.id, { name, socket })
     let subclients = []
