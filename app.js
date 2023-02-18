@@ -101,6 +101,8 @@ ioSocketServer.on("connection", (socket) => {
 
   socket.on("close", () => {
     clients.delete(metadata.id)
+    names.delete(String(metadata.name).toUpperCase())
+
     metadata.dms.forEach((room) => {
       rooms.delete(room)
     })
@@ -117,6 +119,8 @@ ioSocketServer.on("connection", (socket) => {
   })
   socket.on("disconnect", () => {
     clients.delete(metadata.id)
+    names.delete(String(metadata.name).toUpperCase())
+
     metadata.dms.forEach((room) => {
       rooms.delete(room)
     })
