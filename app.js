@@ -3,6 +3,8 @@ const { PORT } = process.env
 const crypto = require("crypto")
 const http = require("http")
 const { Server } = require("socket.io")
+const { streamToBuffer } = require("./Helpers/aws/converters.helper")
+const S3Helper = require("./Helpers/aws/s3.helper")
 const httpServer = http.createServer()
 httpServer.listen(PORT)
 const ioSocketServer = new Server(httpServer)
@@ -32,7 +34,7 @@ ioSocketServer.on("connection", (socket) => {
   }
   socket.emit("backlog", msgs)
 
-  socket.on("online", () => {
+  socket.on("online", async () => {
     let subclients = []
     ;[...clients.entries()].forEach((clientPair) =>
       subclients.push({ name: clientPair[1].name, id: clientPair[0] })
@@ -45,7 +47,7 @@ ioSocketServer.on("connection", (socket) => {
     )
   })
 
-  socket.on("name", (name) => {
+  socket.on("name", async (name) => {
     if (
       names.has(String(name).toUpperCase()) ||
       String(name).toUpperCase() == "SYSTEM"
@@ -68,24 +70,42 @@ ioSocketServer.on("connection", (socket) => {
     )
   })
 
-  socket.on("message", (msg) => {
+  socket.on("message", async (msg, img) => {
+    let imgB64
+    if (img) {
+      let key = `${metadata.id}_${Date.now().toString(16)}`
+      const upload = await S3Helper.upload(Buffer.from(img), key).catch(
+        (err) => {
+          console.log(err)
+          socket.emit("UPLOADFAIL")
+        }
+      )
+      if (upload)
+        // Fix the file download + send to client
+        imgB64 = await S3Helper.download(key).catch(() => {
+          console.log(err)
+          socket.emit("UPLOADFAIL")
+        })
+      imgB64 = imgB64.Body.toString("base64")
+    }
     const new_msg = {
       id: metadata.id,
       owner: metadata.name,
       content: msg,
+      image: imgB64,
     }
     msgs.push(new_msg)
     ;[...clients.values()].forEach((client) => client.socket.send(new_msg))
   })
 
-  socket.on("loadDm", (id) => {
+  socket.on("loadDm", async (id) => {
     let sortedIDs = [metadata.id, id].sort()
     let concat = sortedIDs[0] + sortedIDs[1]
     socket.emit("loadDm", rooms.get(concat) || [])
     metadata.dms.push(concat)
   })
 
-  socket.on("directMessage", (dmdata) => {
+  socket.on("directMessage", async (dmdata) => {
     let sortedIDs = [metadata.id, dmdata.id].sort()
     let concat = sortedIDs[0] + sortedIDs[1]
     if (!rooms.get(concat)) rooms.set(concat, [])
@@ -99,7 +119,7 @@ ioSocketServer.on("connection", (socket) => {
     clients.get(dmdata.id).socket.emit("directMessage", msg, "")
   })
 
-  socket.on("close", () => {
+  socket.on("close", async () => {
     clients.delete(metadata.id)
     names.delete(String(metadata.name).toUpperCase())
 
@@ -117,7 +137,7 @@ ioSocketServer.on("connection", (socket) => {
       )
     )
   })
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     clients.delete(metadata.id)
     names.delete(String(metadata.name).toUpperCase())
 
