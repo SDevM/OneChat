@@ -7,7 +7,7 @@ const { streamToBuffer } = require("./Helpers/aws/converters.helper")
 const S3Helper = require("./Helpers/aws/s3.helper")
 const httpServer = http.createServer()
 httpServer.listen(PORT)
-const ioSocketServer = new Server(httpServer)
+const ioSocketServer = new Server(httpServer, { maxHttpBufferSize: 5e8 })
 
 const msgs = [
   {
