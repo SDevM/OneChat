@@ -54,8 +54,10 @@ ioSocketServer.on("connection", (socket) => {
     ) {
       socket.emit("NAMETAKEN")
       return
-    } else if (String(name).toUpperCase() != "ANON")
+    } else if (String(name).toUpperCase() != "ANON") {
+      names.delete(String(metadata.name).toUpperCase())
       names.add(String(name).toUpperCase())
+    }
     metadata.name = name
     clients.set(metadata.id, { name, socket })
     let subclients = []
@@ -101,8 +103,15 @@ ioSocketServer.on("connection", (socket) => {
   socket.on("loadDm", async (id) => {
     let sortedIDs = [metadata.id, id].sort()
     let concat = sortedIDs[0] + sortedIDs[1]
+    socket.join(concat)
     socket.emit("loadDm", rooms.get(concat) || [])
     metadata.dms.push(concat)
+  })
+
+  socket.on("leaveDm", async (id) => {
+    let sortedIDs = [metadata.id, id].sort()
+    let concat = sortedIDs[0] + sortedIDs[1]
+    socket.leave(concat)
   })
 
   socket.on("directMessage", async (dmdata) => {
@@ -115,8 +124,7 @@ ioSocketServer.on("connection", (socket) => {
       content: dmdata.text,
     }
     rooms.get(concat).push(msg)
-    socket.emit("directMessage", msg, metadata.id)
-    clients.get(dmdata.id).socket.emit("directMessage", msg, "")
+    ioSocketServer.to(concat).emit("directMessage", msg, metadata.id)
   })
 
   socket.on("close", async () => {
